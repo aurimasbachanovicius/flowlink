@@ -8,14 +8,19 @@ export async function run(): Promise<void> {
 
         // const {context = {}} = github;
 
-        const {pull_request} = github.context.payload;
-
-        if (!pull_request) {
+        if (github.context.eventName !== 'pull_request') {
             core.setFailed('Action must be run on pull_request event');
             return;
         }
 
-        const body = pull_request.body;
+        const pullRequest = github.context.payload.pull_request;
+        if (!pullRequest) {
+            core.setFailed('No pull request found in the payload');
+            return;
+        }
+
+        const body = pullRequest.body;
+        core.debug(`PR body: ${body}`);
 
         if (body && body.includes("urgent")) {
             console.log('PR marked as urgent.');
