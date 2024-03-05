@@ -1,5 +1,5 @@
 name: 'Flow link'
 description: 'A GitHub Action that dispatches workflow and waits for the completion of the workflow run.'
 runs:
-  using: 'node12'
+  using: 'node20'
   main: 'dist/index.js'
