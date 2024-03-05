@@ -3,3 +3,13 @@ description: 'A GitHub Action that dispatches workflow and waits for the complet
 runs:
   using: 'node20'
   main: 'dist/index.js'
+inputs:
+  github-token:
+    description: 'Github token to access repository.'
+    required: true
+  workflow:
+    description: 'Name of the workflow (filename or Name.)'
+    required: true
+  branch:
+    description: 'Name of the branch for dispatching workflow.'
+    required: true
