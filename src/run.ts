@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
     try {
         // const token = core.getInput('GITHUB_TOKEN', {required: true});
         // const octokit = github.getOctokit(token);
@@ -31,5 +31,3 @@ async function run(): Promise<void> {
         }
     }
 }
-
-run().then();
