@@ -1,15 +1,23 @@
-name: 'Flow link'
-description: 'A GitHub Action that dispatches workflow and waits for the completion of the workflow run.'
+name: "Flow link"
+description: "A GitHub Action that dispatches workflow and waits for the completion of the workflow run."
 runs:
-  using: 'node20'
-  main: 'dist/index.js'
+  using: "node20"
+  main: "dist/index.js"
 inputs:
   github-token:
-    description: 'Github token to access repository.'
+    description: "Github token to access repository."
     required: true
   workflow:
-    description: 'Name of the workflow (filename or Name.)'
+    description: "Name of the workflow (filename or Name.)"
     required: true
   branch:
-    description: 'Name of the branch for dispatching workflow.'
+    description: "Name of the branch for dispatching workflow."
     required: true
+  repository:
+    description: "Name of the repository (ex.: aurimasbachanovicius/flowlink) for dispatching workflow."
+    required: false
+    default: ""
+  propogate_failure:
+    description: "Should action fail if dispatched run fails."
+    required: false
+    default: ""

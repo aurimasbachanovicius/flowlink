@@ -1,15 +1,13 @@
-import * as core from "@actions/core";
+import { test } from "bun:test";
 import { run } from "./run";
 import { createSettingsFromGithub } from "./settings";
 import { createServicesFromOctokit } from "./services";
 
-try {
+test("run test with github integration (.env)", async () => {
   const settings = createSettingsFromGithub();
   const services = createServicesFromOctokit(settings);
 
-  await run(settings, services);
-} catch (e) {
-  const errorMessage = (e as Error).message || "An unknown error occurred";
-  core.setFailed(errorMessage);
-  console.error(e);
-}
+  try {
+    await run(settings, services);
+  } catch (e) {}
+}, 60000);

@@ -28861,6 +28861,187 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 6144:
+/***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _run__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9655);
+/* harmony import */ var _settings__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1685);
+/* harmony import */ var _services__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3380);
+
+
+
+
+try {
+    const settings = (0,_settings__WEBPACK_IMPORTED_MODULE_1__/* .createSettingsFromGithub */ .W)();
+    const services = (0,_services__WEBPACK_IMPORTED_MODULE_2__/* .createServicesFromOctokit */ .C)(settings);
+    await (0,_run__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(settings, services);
+}
+catch (e) {
+    const errorMessage = e.message || "An unknown error occurred";
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(errorMessage);
+    console.error(e);
+}
+
+__webpack_async_result__();
+} catch(e) { __webpack_async_result__(e); } }, 1);
+
+/***/ }),
+
+/***/ 9655:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "K": () => (/* binding */ run)
+});
+
+;// CONCATENATED MODULE: ./src/utils.ts
+function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+;// CONCATENATED MODULE: ./src/run.ts
+
+
+async function run(settings, services) {
+    const lastRun = await services.getLatestRunByBranch(settings.branch);
+    const response = await services.dispatchWorkflow(settings);
+    if (response.status !== 204) {
+        throw new Error(`Failed to dispatch workflow. Got status ${response.status}. Expected 204`);
+    }
+    const newlyCreatedRun = await retryUpdateUntilCondition(services.getLatestRunByBranch, [settings.branch], (run) => run.run_number > lastRun.run_number, 10);
+    const runAfterConclusionCheck = await retryUpdateUntilCondition(services.getRunDetails, [newlyCreatedRun], (run) => run.conclusion !== null, 60);
+    if (runAfterConclusionCheck.conclusion !== "success") {
+        throw new Error(`Run ${runAfterConclusionCheck.run_number} failed with conclusion ${runAfterConclusionCheck.conclusion}`);
+    }
+}
+async function retryUpdateUntilCondition(fetcher, args, condition, maximumRetries, retries = 0) {
+    if (retries > maximumRetries) {
+        throw new Error("Exceeded maximum retries waiting for a newer run.");
+    }
+    const updatedRun = await fetcher(...args);
+    if (condition(updatedRun, retries)) {
+        return updatedRun;
+    }
+    await delay(2000);
+    return retryUpdateUntilCondition(fetcher, args, condition, maximumRetries, retries + 1);
+}
+
+
+/***/ }),
+
+/***/ 3380:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "C": () => (/* binding */ createServicesFromOctokit)
+});
+
+;// CONCATENATED MODULE: ./src/octokit-requests.ts
+
+async function dispatchWorkflow(settings) {
+    return await settings.octokit
+        .request(`POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches`, {
+        ...settings.repo,
+        ref: settings.branch,
+        workflow_id: settings.workflow,
+    })
+        .then((r) => {
+        return { status: r.status };
+    });
+}
+function fetchLatestRunByBranch(repo, octokit) {
+    return async (branch) => {
+        return octokit
+            .request(`GET /repos/{owner}/{repo}/actions/runs`, {
+            ...repo,
+            per_page: 1,
+            page: 1,
+            branch: branch,
+        })
+            .then((response) => {
+            return {
+                id: response.data?.workflow_runs[0].id,
+                run_number: response.data?.workflow_runs[0].run_number,
+                conclusion: response.data?.workflow_runs[0].conclusion,
+            };
+        });
+    };
+}
+function fetchRunDetails(repo, octokit) {
+    return async (run) => {
+        return octokit
+            .request(`GET /repos/{owner}/{repo}/actions/runs/{run_id}`, {
+            ...repo,
+            run_id: run.id,
+            exclude_pull_requests: true,
+        })
+            .then((response) => {
+            return {
+                id: response.data.id,
+                run_number: response.data.run_number,
+                conclusion: response.data.conclusion,
+            };
+        });
+    };
+}
+
+
+;// CONCATENATED MODULE: ./src/services.ts
+
+function createServicesFromOctokit(settings) {
+    return {
+        dispatchWorkflow: dispatchWorkflow,
+        getRunDetails: fetchRunDetails(settings.repo, settings.octokit),
+        getLatestRunByBranch: fetchLatestRunByBranch(settings.repo, settings.octokit),
+    };
+}
+
+
+/***/ }),
+
+/***/ 1685:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "W": () => (/* binding */ createSettingsFromGithub)
+/* harmony export */ });
+/* unused harmony export getRepository */
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
+
+
+function createSettingsFromGithub() {
+    return {
+        branch: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("branch", { required: true }),
+        repo: getRepository(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("repository"), _actions_github__WEBPACK_IMPORTED_MODULE_1__.context),
+        workflow: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("workflow", { required: true }),
+        octokit: _actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("github-token", { required: true })),
+    };
+}
+function getRepository(input, ctx) {
+    if (input === "") {
+        return { owner: ctx.repo.owner, repo: ctx.repo.repo };
+    }
+    const repoRegex = /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\/[a-zA-Z0-9]+([_.-]?[a-zA-Z0-9]+)*$/;
+    if (!repoRegex.test(input)) {
+        throw new Error(`Invalid repository name. Expected format is "owner/repo". Got "${input}"`);
+    }
+    const [owner, repositoryName] = input.split("/");
+    return { owner: owner, repo: repositoryName };
+}
+
+
+/***/ }),
+
 /***/ 9491:
 /***/ ((module) => {
 
@@ -30703,35 +30884,113 @@ module.exports = parseParams
 /******/ }
 /******/ 
 /************************************************************************/
+/******/ /* webpack/runtime/async module */
+/******/ (() => {
+/******/ 	var webpackQueues = typeof Symbol === "function" ? Symbol("webpack queues") : "__webpack_queues__";
+/******/ 	var webpackExports = typeof Symbol === "function" ? Symbol("webpack exports") : "__webpack_exports__";
+/******/ 	var webpackError = typeof Symbol === "function" ? Symbol("webpack error") : "__webpack_error__";
+/******/ 	var resolveQueue = (queue) => {
+/******/ 		if(queue && !queue.d) {
+/******/ 			queue.d = 1;
+/******/ 			queue.forEach((fn) => (fn.r--));
+/******/ 			queue.forEach((fn) => (fn.r-- ? fn.r++ : fn()));
+/******/ 		}
+/******/ 	}
+/******/ 	var wrapDeps = (deps) => (deps.map((dep) => {
+/******/ 		if(dep !== null && typeof dep === "object") {
+/******/ 			if(dep[webpackQueues]) return dep;
+/******/ 			if(dep.then) {
+/******/ 				var queue = [];
+/******/ 				queue.d = 0;
+/******/ 				dep.then((r) => {
+/******/ 					obj[webpackExports] = r;
+/******/ 					resolveQueue(queue);
+/******/ 				}, (e) => {
+/******/ 					obj[webpackError] = e;
+/******/ 					resolveQueue(queue);
+/******/ 				});
+/******/ 				var obj = {};
+/******/ 				obj[webpackQueues] = (fn) => (fn(queue));
+/******/ 				return obj;
+/******/ 			}
+/******/ 		}
+/******/ 		var ret = {};
+/******/ 		ret[webpackQueues] = x => {};
+/******/ 		ret[webpackExports] = dep;
+/******/ 		return ret;
+/******/ 	}));
+/******/ 	__nccwpck_require__.a = (module, body, hasAwait) => {
+/******/ 		var queue;
+/******/ 		hasAwait && ((queue = []).d = 1);
+/******/ 		var depQueues = new Set();
+/******/ 		var exports = module.exports;
+/******/ 		var currentDeps;
+/******/ 		var outerResolve;
+/******/ 		var reject;
+/******/ 		var promise = new Promise((resolve, rej) => {
+/******/ 			reject = rej;
+/******/ 			outerResolve = resolve;
+/******/ 		});
+/******/ 		promise[webpackExports] = exports;
+/******/ 		promise[webpackQueues] = (fn) => (queue && fn(queue), depQueues.forEach(fn), promise["catch"](x => {}));
+/******/ 		module.exports = promise;
+/******/ 		body((deps) => {
+/******/ 			currentDeps = wrapDeps(deps);
+/******/ 			var fn;
+/******/ 			var getResult = () => (currentDeps.map((d) => {
+/******/ 				if(d[webpackError]) throw d[webpackError];
+/******/ 				return d[webpackExports];
+/******/ 			}))
+/******/ 			var promise = new Promise((resolve) => {
+/******/ 				fn = () => (resolve(getResult));
+/******/ 				fn.r = 0;
+/******/ 				var fnQueue = (q) => (q !== queue && !depQueues.has(q) && (depQueues.add(q), q && !q.d && (fn.r++, q.push(fn))));
+/******/ 				currentDeps.map((dep) => (dep[webpackQueues](fnQueue)));
+/******/ 			});
+/******/ 			return fn.r ? promise : getResult();
+/******/ 		}, (err) => ((err ? reject(promise[webpackError] = err) : outerResolve(exports)), resolveQueue(queue)));
+/******/ 		queue && (queue.d = 0);
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/compat get default export */
+/******/ (() => {
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__nccwpck_require__.n = (module) => {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			() => (module['default']) :
+/******/ 			() => (module);
+/******/ 		__nccwpck_require__.d(getter, { a: getter });
+/******/ 		return getter;
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/define property getters */
+/******/ (() => {
+/******/ 	// define getter functions for harmony exports
+/******/ 	__nccwpck_require__.d = (exports, definition) => {
+/******/ 		for(var key in definition) {
+/******/ 			if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			}
+/******/ 		}
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/hasOwnProperty shorthand */
+/******/ (() => {
+/******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ })();
+/******/ 
 /******/ /* webpack/runtime/compat */
 /******/ 
 /******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
 /******/ 
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
-(() => {
-
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var core = __nccwpck_require__(2186);
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __nccwpck_require__(5438);
-;// CONCATENATED MODULE: ./src/run.ts
-
-
-async function run() {
-    const token = core.getInput('github-token', { required: true });
-    const octokit = github.getOctokit(token);
-    const workflow = core.getInput('workflow', { required: true });
-    const branch = core.getInput('branch', { required: true });
-    const response = await octokit.request(`POST /repos/${github.context.repo.owner}/${github.context.repo.repo}/actions/workflows/${workflow}/dispatches`, { ref: branch });
-    core.debug('Response: ');
-    core.debug(response.data);
-}
-
-;// CONCATENATED MODULE: ./src/index.ts
-
-run().then();
-
-})();
-
+/******/ 
+/******/ // startup
+/******/ // Load entry module and return exports
+/******/ // This entry module used 'module' so it can't be inlined
+/******/ var __webpack_exports__ = __nccwpck_require__(6144);
+/******/ __webpack_exports__ = await __webpack_exports__;
+/******/ 
